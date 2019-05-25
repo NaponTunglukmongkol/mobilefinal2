@@ -76,6 +76,32 @@ class UserProvider {
     }
   }
 
+  Future<int> checkUser(String user, String pass) async {
+    List<Map> map = await db.query(tableUser,
+        columns: [columnId, columnage, columnname, columnuserid, columnpassword],
+        where: "$columnuserid = ?",
+        whereArgs: [user, pass]);
+    
+    if (map.length > 0) {
+      return 1;
+    } else {
+      return 0;
+    }
+  }
+
+  Future<User> checkOnlyUser(String user) async {
+    List<Map> map = await db.query(tableUser,
+        columns: [columnId, columnage, columnname, columnuserid, columnpassword],
+        where: "$columnuserid = ?",
+        whereArgs: [user]);
+    
+    if (map.length > 0) {
+      return new User.formMap(map.first);
+    } else {
+      return null;
+    }
+  }
+
   Future<int> delete(int id) async {
     return db.delete(tableUser, where: '$columnId = ?', whereArgs: [id]);
   }

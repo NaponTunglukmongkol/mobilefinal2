@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import '../model/user.dart';
 
 class LoginPage extends StatefulWidget {
   @override
@@ -10,11 +12,25 @@ class LoginPage extends StatefulWidget {
 
 class LoginPageState extends State<LoginPage> {
   final _formkey = GlobalKey<FormState>();
+  TextEditingController userid = TextEditingController();
+  TextEditingController password = TextEditingController();
   @override
+  void initState() {
+    Future getUserid() async{
+      final prefs = await SharedPreferences.getInstance();
+      final myString = prefs.getString('userid') ?? null;
+      if (myString != null) {
+        Navigator.pushNamed(context, "/main");
+      }
+    }
+    getUserid();
+  }
   Widget build(BuildContext context) {
     // TODO: implement build
-    int checkid = 0;
-    int checkpassword = 0;
+    UserProvider user = UserProvider();
+    user.open('user.db');
+    /*int checkid = 0;
+    int checkpassword = 0;*/
     return Scaffold(
       body: Form(
         key: _formkey,
@@ -26,6 +42,7 @@ class LoginPageState extends State<LoginPage> {
               "resources/Chino76.jpg",
             ),
             TextFormField(
+              controller: userid,
               decoration: InputDecoration(
                 labelText: "User id",
                 hintText: "User id",
@@ -33,17 +50,10 @@ class LoginPageState extends State<LoginPage> {
               ),
               keyboardType: TextInputType.emailAddress,
               onSaved: (value) => print(value),
-              validator: (value){
-                if(value.isEmpty){
-                  checkid = 1;
-                  return "";
-                }else if(value != 'admin'){
-                  checkid = 2;
-                  return "";
-                }
-              },
+              validator: (value){},
             ),
             TextFormField(
+              controller: password,
               decoration: InputDecoration(
                 labelText: "Password",
                 hintText: "Password",
@@ -51,32 +61,27 @@ class LoginPageState extends State<LoginPage> {
               ),
               keyboardType: TextInputType.text,
               obscureText: true,
-              validator: (value){
-                if(value.isEmpty){
-                  checkpassword = 1;
-                  return "";
-                }else if(value != 'admin'){
-                  checkpassword = 2;
-                  return "";
-                }
-              },
+              validator: (value){},
             ),
             Builder(builder: (context) => RaisedButton(
               child: Text('Continue'),
-              onPressed: () {
+              onPressed: () async{
                 if(_formkey.currentState.validate()){
-                  checkid = 0;
-                  checkpassword = 0;
-                  Navigator.pushNamed(context, "/main");
-                }else if(checkid == 1 || checkpassword == 1){
-                  Scaffold.of(context).showSnackBar(SnackBar(
-                  content: Text('กรุณาระบุ user or password'),
-                  duration: Duration(seconds: 3),));
-                }
-                else{
-                  Scaffold.of(context).showSnackBar(SnackBar(
-                  content: Text('user or password ไม่ถูกต้อง'),
-                  duration: Duration(seconds: 3),));
+                  User result = await user.checkOnlyUser(userid.text);
+                  if(result == null){
+                    Scaffold.of(context).showSnackBar(SnackBar(
+                    content: Text('Invalid user or password'),
+                    duration: Duration(seconds: 3),));
+                  } else if(result.password != password.text){
+                    Scaffold.of(context).showSnackBar(SnackBar(
+                    content: Text('Invalid user or password'),
+                    duration: Duration(seconds: 3),));
+                  } else {
+                    final prefs = await SharedPreferences.getInstance();
+                    prefs.setString('userid', result.userid);
+                    prefs.setString('name', result.name);
+                    Navigator.pushNamed(context, "/main");
+                  }
                 }
               }),
             ),
